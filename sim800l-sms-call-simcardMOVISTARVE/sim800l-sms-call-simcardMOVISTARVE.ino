@@ -36,14 +36,14 @@ GPRS gprs;
 //--------------------------------Start-Variable Declaration-------------------------------------------//
 
 //Boolean to be set to false if number is on contact
-bool ledStatus = HIGH;
+bool ledStatus                                                                 = HIGH;
 
 ////Variable to hold last line of serial output from SIM800
-char currentLine[500] = "";
-int currentLineIndex = 0;
+char currentLine[500]                                                          = "";
+int currentLineIndex                                                           = 0;
 
 //Boolean to be set to true if number is found on contact
-bool isIncontact = false;
+bool isIncontact                                                               = false;
 
 // Variable to hold contact from call
 char contact[13]; // changes this if needed (a contact name with more than 13 characters)
@@ -52,42 +52,79 @@ char contact[13]; // changes this if needed (a contact name with more than 13 ch
 char phonenumber[13];
 
 // Variable to send SMS
-char *number = NULL;
+char *number                                                                   = NULL;
 
 ////Boolean to be set to true if call notificaion was found and next line is NOT empty
 //bool nextLineIsCall = false;
-bool nextValidLineIsCall = false;
+bool nextValidLineIsCall                                                       = false;
 
 ////Boolean to be set to true if message notificaion was found and next
 ////line of serial output is the actual SMS message content
-bool nextLineIsMessage = false;
+bool nextLineIsMessage                                                         = false;
 
 //Boolean to be set to true if number is found on phonebook
-bool isInPhonebook = false;
+bool isInPhonebook                                                             = false;
 
 // String which holds the last line read from Serial activitiy
-String lastLine = "";
+String lastLine                                                                = "";
 
 // Integer indexes
-int firstComma = -1;
-int secondComma = -1;
-int thirdComma = -1;
-int forthComma = -1;
-int fifthComma = -1;
-int firstQuote = -1;
-int secondQuote = -1;
-int len = -1;
-int j = -1;
-int i = -1;
-int f = -1;
-int r = -1;
+int firstComma                                                                 = -1;
+int secondComma                                                                = -1;
+int thirdComma                                                                 = -1;
+int forthComma                                                                 = -1;
+int fifthComma                                                                 = -1;
+int firstQuote                                                                 = -1;
+int secondQuote                                                                = -1;
+int len                                                                        = -1;
+int j                                                                          = -1;
+int i                                                                          = -1;
+int f                                                                          = -1;
+int r                                                                          = -1;
 
 // Contact Counters
-int OldCounter = 0;
-int NewCounter = 0;
+int OldCounter                                                                 = 0;
+int NewCounter                                                                 = 0;
 
 // Temporal variable when using LoadWhiteList() ClearWhiteList()
-String tmp = "";
+String tmp                                                                     = "";
+
+
+/*
+
+PINOUT Connection:
+
+///////////////////////////////////////////////////////////////////////////////
+
+External 12VDC/2A Power Supply                                    MP1584 (Turn knot until a volmeter shows 5VDC)
+
+Positive--------------------------------------------------------->Positive
+
+Negative--------------------------------------------------------->Negative
+
+///////////////////////////////////////////////////////////////////////////////
+
+MP1584                                                            SIM800L-EVB
+
+Positive--------------------------------------------------------->5V/4V
+
+Negative--------------------------------------------------------->GNB
+
+///////////////////////////////////////////////////////////////////////////////
+
+Arduino UNO                                                        SIM800L-EVB
+
+Digital 7--------------------------------------------------------->SIM_RXD
+
+Digital 8--------------------------------------------------------->SIM_TX
+
+RESET------------------------------------------------------------->RST
+
+GND (POWER SECTION)----------------------------------------------->GND
+
+///////////////////////////////////////////////////////////////////////////////
+
+*/
 
 
 //--------------------------------End-Variable Declaration-------------------------------------------//
@@ -99,7 +136,8 @@ String tmp = "";
 
 //--------------------------------Start-Setup Section-----------------------------------------------//
 
-void setup() {
+void setup()
+ {
   // put your setup code here, to run once:
 
   Serial.begin(9600);
@@ -116,39 +154,39 @@ void setup() {
   delay(1000);
 
   while (0 != gprs.init())
-  {
-    delay(1000);
-    Serial.print("init error\r\n");
-  }
+        {
+          delay(1000);
+          Serial.print("init error\r\n");
+        }
 
   //Check Call Availability
   if (0 != gprs.sendCmdAndWaitForResp("AT+CCALR?\r\n", "1", TIMEOUT))
-  {
-    ERROR("ERROR:CCALR");
-    return;
-  }
+     {
+       ERROR("ERROR:CCALR");
+       return;
+     }
 
 
   //Set call notification
   if (0 != gprs.sendCmdAndWaitForResp("AT+CLIP=1\r\n", "OK", TIMEOUT))
-  {
-    ERROR("ERROR:CLIP");
-    return;
-  }
+     {
+       ERROR("ERROR:CLIP");
+       return;
+     }
 
   //Set SMS mode to ASCII
   if (0 != gprs.sendCmdAndWaitForResp("AT+CMGF=1\r\n", "OK", TIMEOUT))
-  {
-    ERROR("ERROR:CMGF");
-    return;
-  }
+     {
+       ERROR("ERROR:CMGF");
+       return;
+     }
 
   //Start listening to New SMS Message Indications
   if (0 != gprs.sendCmdAndWaitForResp("AT+CNMI=1,2,0,0,0\r\n", "OK", TIMEOUT))
-  {
-    ERROR("ERROR:CNMI");
-    return;
-  }
+     {
+       ERROR("ERROR:CNMI");
+       return;
+     }
 
   Serial.println("Init success");
 }
@@ -164,20 +202,19 @@ void loop()
 
   //If there is serial output from SIM800
   if (gprs.serialSIM800.available())
-  {
-    char lastCharRead = gprs.serialSIM800.read();
-
+     {
+       char lastCharRead = gprs.serialSIM800.read();
     //Read each character from serial output until \r or \n is reached (which denotes end of line)
     if (lastCharRead == '\r' || lastCharRead == '\n')
-    {
-      endoflinereached();
-    }
+       {
+         endoflinereached();
+       }
 
     else
-    {
-      currentLine[currentLineIndex++] = lastCharRead;
-    }
-  }
+       {
+         currentLine[currentLineIndex++] = lastCharRead;
+       }
+     }
 }
 
 //--------------------------------End-loop Section----------------------------------------------//
@@ -206,40 +243,34 @@ void endoflinereached()
   //Hence, next line is the message content.
 
   if (lastLine.startsWith("RING"))                                   // New incoming call
-  {
-    Serial.println(lastLine);
-    nextValidLineIsCall = true;
-  }
-  else if ((lastLine.length() > 0) && (nextValidLineIsCall))        // Rejects any empty line
-  {
-    LastLineIsCLIP();
-  }
-  else if (lastLine.startsWith("+CMT:"))                           // New incoming SMS
-  {
-    Serial.println(lastLine);
-    nextLineIsMessage = true;
+     {
+       Serial.println(lastLine);
+       nextValidLineIsCall = true;
+     }
+     else if ((lastLine.length() > 0) && (nextValidLineIsCall))        // Rejects any empty line
+             {
+               LastLineIsCLIP();
+             }
+     else if (lastLine.startsWith("+CMT:"))                           // New incoming SMS
+             {
+               Serial.println(lastLine);
+               nextLineIsMessage = true;
+               // Parsing lastLine to determine registration on SIM card
+               firstComma = lastLine.indexOf(',');
+               Serial.println(firstComma);  //For debugging
+               secondComma = lastLine.indexOf(',', firstComma + 1);
+               Serial.println(secondComma); //For debugging
+               // +CMT: "+584168262667","","17/03/14,16:18:53-16" Telefónica Movistar Venezuela with no contacts saved
+               //firstComma = 21
+               //secondComma = 24
+             }
+     else if ((lastLine.length() > 0) && (nextLineIsMessage))       // Rejects any empty line
+             {
+               ////LastLineIsCMT();
+               LastLineIsCMT();
+             }
 
-    // Parsing lastLine to determine registration on SIM card
-    firstComma = lastLine.indexOf(',');
-    Serial.println(firstComma);  //For debugging
-    secondComma = lastLine.indexOf(',', firstComma + 1);
-    Serial.println(secondComma); //For debugging
-
-    // +CMT: "+584168262667","","17/03/14,16:18:53-16" Telefónica Movistar Venezuela with no contacts saved
-    //firstComma = 21
-    //secondComma = 24
-
-
-  }
-  else if ((lastLine.length() > 0) && (nextLineIsMessage))       // Rejects any empty line
-  {
-
-    ////LastLineIsCMT();
-    LastLineIsCMT();
-
-  }
-
-  CleanCurrentLine();
+     CleanCurrentLine();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -247,49 +278,46 @@ void CleanCurrentLine()
 {
   //Clear char array for next line of read
   for ( int i = 0; i < sizeof(currentLine);  ++i )
-  {
-    currentLine[i] = (char)0;
-  }
+      {
+        currentLine[i] = (char)0;
+      }
   currentLineIndex = 0;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////
 void LastLineIsCMT()
 {
   if (nextLineIsMessage)
-  {
-    Serial.println(lastLine);
-
-
-    // If exists on Phonebook
-    //if (secondComma > 22)   // Only works with Movilnet and Digitel Venezuela
+     {
+       Serial.println(lastLine);
+       // If exists on Phonebook
+       //if (secondComma > 22)   // Only works with Movilnet and Digitel Venezuela
     if (secondComma > 24)    // Only works with for Telefónica Movistar Venezuela
-    {
-      Serial.println("In Phonebook"); //For debugging
-      isInPhonebook = true;
-      Serial.println(isInPhonebook);
-    }
+       {
+         Serial.println("In Phonebook"); //For debugging
+         isInPhonebook = true;
+         Serial.println(isInPhonebook);
+       }
     else
-    {
-      Serial.println("Not in Phonebook"); //For debugging
-      isInPhonebook = false;
-    }
-
+       {
+         Serial.println("Not in Phonebook"); //For debugging
+         isInPhonebook = false;
+       }
     //if on phonebook ---------------------------
     if (isInPhonebook)
-    {
-      // If SMS contains LED ON or LED OFF or #WhiteList
-      if (lastLine.indexOf("LED ON") >= 0)
-      {
-        ledStatus = 1;   // Turns ON LED
-      }
-      else if (lastLine.indexOf("LED OFF") >= 0)
-      {
-        ledStatus = 0;  // Turns OFF LED
-      }
-    }
+       {
+         // If SMS contains LED ON or LED OFF or #WhiteList
+         if (lastLine.indexOf("LED ON") >= 0)
+            {
+              ledStatus = 1;   // Turns ON LED
+            }
+         else if (lastLine.indexOf("LED OFF") >= 0)
+                 {
+                   ledStatus = 0;  // Turns OFF LED
+                 }
+       }
     CleanCurrentLine();
     nextLineIsMessage = false;
-  }
+   }
 }
 //////////////////////////////////////////////////////////////////////////
 void LastLineIsCLIP()
@@ -312,13 +340,13 @@ void LastLineIsCLIP()
 
     //Extracts contact
     j = 0;
-    for (int i = forthComma + 1; i < fifthComma; ++i) {
-      contact[j] = lastLine[i];
-      ++j;
-    }
+    for (int i = forthComma + 1; i < fifthComma; ++i)
+		{
+          contact[j] = lastLine[i];
+          ++j;
+        }
     contact[j] = '\0'; // Contact as a full string
     Serial.println(contact); //For Debugging
-
     len = strlen(contact); //lenght of contact string
     Serial.println(len);  // For Debugging
 
@@ -329,25 +357,25 @@ void LastLineIsCLIP()
 
     // If exists on contact
     if (len > 2)
-    {
-      Serial.println("In contact"); //For debugging
-      isIncontact = true;
-      Serial.println(isIncontact);
-    }
+       {
+         Serial.println("In contact"); //For debugging
+         isIncontact = true;
+         Serial.println(isIncontact);
+       }
     else
-    {
-      Serial.println("Not in contact"); //For debugging
-      isIncontact = false;
-    }
+       {
+         Serial.println("Not in contact"); //For debugging
+         isIncontact = false;
+       }
 
     // If registered turns off led on pin 13.
     //If not, just do nothing. (In a later release the action of turning off the led will notify the caller via SMS)
 
     if (isIncontact)
-    {
-      ledStatus = 0;
-      digitalWrite(LED_PIN, ledStatus);
-    }
+       {
+         ledStatus = 0;
+         digitalWrite(LED_PIN, ledStatus);
+       }
     ////CleanContactArray();
     nextValidLineIsCall = false;
   }
