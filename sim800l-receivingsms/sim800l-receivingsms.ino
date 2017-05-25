@@ -36,6 +36,43 @@
 *
 */
 
+/*
+
+PINOUT Connection:
+
+///////////////////////////////////////////////////////////////////////////////
+
+External 12VDC/2A Power Supply                                    MP1584 (Turn knot until a volmeter shows 5VDC)
+
+Positive--------------------------------------------------------->Positive
+
+Negative--------------------------------------------------------->Negative
+
+///////////////////////////////////////////////////////////////////////////////
+
+MP1584                                                            SIM800L-EVB
+
+Positive--------------------------------------------------------->5V/4V
+
+Negative--------------------------------------------------------->GNB
+
+///////////////////////////////////////////////////////////////////////////////
+
+Arduino UNO                                                        SIM800L-EVB
+
+Digital 7--------------------------------------------------------->SIM_RXD
+
+Digital 8--------------------------------------------------------->SIM_TX
+
+RESET------------------------------------------------------------->RST
+
+GND (POWER SECTION)----------------------------------------------->GND
+
+///////////////////////////////////////////////////////////////////////////////
+
+*/
+
+
 
 
 /****************************************************************Start of the code********************************************************/
@@ -68,29 +105,30 @@ GPRS gprs;
 //Initial values of variables processing any character from serial
 
 ////Variable to hold last line of serial output from SIM800
-char currentLine[500] = "";
-int currentLineIndex = 0;
+char currentLine[500]                                                                   = "";
+int currentLineIndex                                                                    = 0;
 
 ////Boolean to be set to true if message notificaion was found and next
 ////line of serial output is the actual SMS message content
-bool nextLineIsMessage = false;
+bool nextLineIsMessage                                                                  = false;
 
 //Boolean to be set to true if message has "LED ON" on its content
-bool ledStatus = LOW;
+bool ledStatus                                                                          = LOW;
 
 //Integers value to determine whether the number who sends SMS belongs the PhoneBook entry previously set.
-int firstComma = -1;
-int secondComma = -1;
+int firstComma                                                                          = -1;
+int secondComma                                                                         = -1;
 
 //Boolean to be set to true if number is found on phonebook
-bool isInPhonebook = false;
+bool isInPhonebook                                                                      = false;
 
 //--------------------------------End-Variable Declaration-------------------------------------------//
 
 
 //--------------------------------Start-Setup section-----------------------------------------------//
  
-void setup() {
+void setup()
+{
   Serial.begin(9600);
   while(!Serial);
 
@@ -102,22 +140,25 @@ void setup() {
   gprs.preInit();
   delay(1000);
  
-  while(0 != gprs.init()) {
-      delay(1000);
-      Serial.print("init error\r\n");
-  } 
+  while(0 != gprs.init())
+	  {
+        delay(1000);
+        Serial.print("init error\r\n");
+      } 
  
   //Set SMS mode to ASCII
-  if(0 != gprs.sendCmdAndWaitForResp("AT+CMGF=1\r\n", "OK", TIMEOUT)) {
-    ERROR("ERROR:CMGF");
-    return;
-  }
+  if(0 != gprs.sendCmdAndWaitForResp("AT+CMGF=1\r\n", "OK", TIMEOUT))
+	{
+      ERROR("ERROR:CMGF");
+      return;
+    }
    
   //Start listening to New SMS Message Indications
-  if(0 != gprs.sendCmdAndWaitForResp("AT+CNMI=1,2,0,0,0\r\n", "OK", TIMEOUT)) {
-    ERROR("ERROR:CNMI");
-    return;
-  }
+  if(0 != gprs.sendCmdAndWaitForResp("AT+CNMI=1,2,0,0,0\r\n", "OK", TIMEOUT))
+	{
+      ERROR("ERROR:CNMI");
+      return;
+    }
  
   Serial.println("Init success");
   Serial.println(ledStatus);
@@ -145,74 +186,79 @@ void setup() {
 
 //--------------------------------Start-Loop Section--------------------------------------------//
 
-void loop() {
+void loop()
+{
   //Write current status to LED pin
   digitalWrite(LED_PIN, ledStatus);
    
   //If there is serial output from SIM800
-  if(gprs.serialSIM800.available()){
-    char lastCharRead = gprs.serialSIM800.read();
-    //Read each character from serial output until \r or \n is reached (which denotes end of line)
-    if(lastCharRead == '\r' || lastCharRead == '\n'){
-        String lastLine = String(currentLine);
-         
-        //If last line read +CMT, New SMS Message Indications was received.
-        //Hence, next line is the message content.
-        if(lastLine.startsWith("+CMT:")){
-          
-          firstComma = lastLine.indexOf(',');
-          Serial.println(firstComma);  //For debugging
-          secondComma = lastLine.indexOf(',', firstComma + 1);
-          Serial.println(secondComma); //For debugging
+  if(gprs.serialSIM800.available())
+    {
+      char lastCharRead = gprs.serialSIM800.read();
+      //Read each character from serial output until \r or \n is reached (which denotes end of line)
+      if(lastCharRead == '\r' || lastCharRead == '\n')
+	    {
+          String lastLine = String(currentLine);
+          //If last line read +CMT, New SMS Message Indications was received.
+          //Hence, next line is the message content.
+          if(lastLine.startsWith("+CMT:"))
+		    {
+              firstComma = lastLine.indexOf(',');
+              Serial.println(firstComma);  //For debugging
+              secondComma = lastLine.indexOf(',', firstComma + 1);
+              Serial.println(secondComma); //For debugging
 
-          /*If secondComma position is greater than 22 it means that the number was previously entered on PhoneBook
-             When not; secondComma is just 22.
-              
-             Example:
-             +CMT: "04161587896","Yoimer","17/02/11,16:41:41-16"  secondComma position is 28
-             +CMT: "04161587896","","17/02/11,16:41:41-16"        secondComma position is 22 which means this number is not on SIMCard PhoneBook
+              /*If secondComma position is greater than 22 it means that the number was previously entered on PhoneBook
+              When not; secondComma is just 22.
+              Example:
+              +CMT: "04161587896","Yoimer","17/02/11,16:41:41-16"  secondComma position is 28
+               +CMT: "04161587896","","17/02/11,16:41:41-16"        secondComma position is 22 which means this number is not on SIMCard PhoneBook
            */
 
-          // If exists on Phonebook
-          if(secondComma > 22){
-            Serial.println("In Phonebook"); //For debugging
-            isInPhonebook = true;
-            Serial.println(isInPhonebook);
-          }else{
-            Serial.println("Not in Phonebook"); //For debugging
-          }
-          
-          Serial.println(lastLine);
-          nextLineIsMessage = true;
-
-        } else if ((lastLine.length() > 0) && (isInPhonebook)) {
-          if(nextLineIsMessage) {
+              // If exists on Phonebook
+              if(secondComma > 22)
+		        {
+                  Serial.println("In Phonebook"); //For debugging
+                  isInPhonebook = true;
+                  Serial.println(isInPhonebook);
+                }
+		    else
+		       {
+                 Serial.println("Not in Phonebook"); //For debugging
+               }
             Serial.println(lastLine);
-             
-            //Read message content and set status according to SMS content
-            if(lastLine.indexOf("LED ON") >= 0){
-              ledStatus = 1;
-            } else if(lastLine.indexOf("LED OFF") >= 0) {
-              ledStatus = 0;
-            }
-             
-            nextLineIsMessage = false;
-            isInPhonebook = false;
-          }
-           
-        }/*else{
-          Serial.println("Not Allowed");
-        }*/
-         
-        //Clear char array for next line of read
-        for( int i = 0; i < sizeof(currentLine);  ++i ) {
-         currentLine[i] = (char)0;
+            nextLineIsMessage = true;
+            } 
+		    else if ((lastLine.length() > 0) && (isInPhonebook))
+			        {
+                      if(nextLineIsMessage)
+			            {
+                          Serial.println(lastLine);             
+                          //Read message content and set status according to SMS content
+                          if(lastLine.indexOf("LED ON") >= 0
+					        {
+                              ledStatus = 1;
+                            } 
+			              else if(lastLine.indexOf("LED OFF") >= 0)
+						         {
+                                   ledStatus = 0;
+                                 }
+                          nextLineIsMessage = false;
+                          isInPhonebook = false;
+                        }
+                    }
+            //Clear char array for next line of read
+            for( int i = 0; i < sizeof(currentLine);  ++i )
+		       {
+                 currentLine[i] = (char)0;
+               }
+            currentLineIndex = 0;
+        } 
+	    else
+		{
+          currentLine[currentLineIndex++] = lastCharRead;
         }
-        currentLineIndex = 0;
-    } else {
-      currentLine[currentLineIndex++] = lastCharRead;
     }
-  }
 }
 
 //--------------------------------End-Function Section-------------------------------------------//
