@@ -1,3 +1,8 @@
+
+// GET only ten new numbers from www.castillolk.com.ve/WhiteList.txt
+
+
+
 //---------Start-Libraries Section----------------------------------------------------//
 
 #include <gprs.h>
@@ -27,15 +32,15 @@ GPRS gprs;
 
 // Integer indexes
 
-int j = -1;
-int i = -1;
-int kk = -1;
-int len = -1;
+int j                                                                          = -1;
+int i                                                                          = -1;
+int kk                                                                         = -1;
+int len                                                                        = -1;
 
 
-char startChar = '#'; // or '!', or whatever your start character is
-char endChar = '#';
-boolean storeString = false; //This will be our flag to put the data in our buffer
+char startChar                                                                 = '#'; // or '!', or whatever your start character is
+char endChar                                                                   = '#';
+boolean storeString                                                            = false; //This will be our flag to put the data in our buffer
 
 int const DATABUFFERSIZE = 180;  //10 phonenumbers
 static char dataBuffer[DATABUFFERSIZE - 40]; //Includes NULL terminator
@@ -59,9 +64,46 @@ char jj[DATABUFFERSIZE + 1];
 //------------------------------End-Libraries Section--------------------------------------------------------//
 
 
+/*
+
+PINOUT Connection:
+
+///////////////////////////////////////////////////////////////////////////////
+
+External 12VDC/2A Power Supply                                    MP1584 (Turn knot until a volmeter shows 5VDC)
+
+Positive--------------------------------------------------------->Positive
+
+Negative--------------------------------------------------------->Negative
+
+///////////////////////////////////////////////////////////////////////////////
+
+MP1584                                                            SIM800L-EVB
+
+Positive--------------------------------------------------------->5V/4V
+
+Negative--------------------------------------------------------->GNB
+
+///////////////////////////////////////////////////////////////////////////////
+
+Arduino UNO                                                        SIM800L-EVB
+
+Digital 7--------------------------------------------------------->SIM_RXD
+
+Digital 8--------------------------------------------------------->SIM_TX
+
+RESET------------------------------------------------------------->RST
+
+GND (POWER SECTION)----------------------------------------------->GND
+
+///////////////////////////////////////////////////////////////////////////////
+
+*/
+
 //--------------------------------Start-Setup Section-----------------------------------------------//
 
-void setup() {
+void setup()
+ {
   // put your setup code here, to run once:
 
   Serial.begin(9600);
@@ -78,14 +120,15 @@ void setup() {
   delay(1000);
 
   while (0 != gprs.init())
-  {
-    delay(1000);
-    Serial.print("init error\r\n");
-  }
+        {
+          delay(1000);
+          Serial.print("init error\r\n");
+        }
 
   Serial.println("Init success");
 }
-void loop() {
+void loop()
+{
   // put your main code here, to run repeatedly:
 
   GetWhiteList();
@@ -116,29 +159,29 @@ void GetWhiteList()
   };
 
   for ( i = 0; i < MAX; i++)
-  {
-    Serial.println("Actual command:");
-    Serial.println(commandlist[i]);
+      {
+        Serial.println("Actual command:");
+        Serial.println(commandlist[i]);
     if (0 != gprs.sendCmdAndWaitForResp(commandlist[i], "OK", TIMEOUT)) //Expects OK
-    {
-      ERROR("ERROR:");
-      Serial.println("There was a network problem. System will restart, please wait...");
-      RestartSystem();
-      delay(TIMEOUT); // Waits for system to restart
-    }
+       {
+         ERROR("ERROR:");
+         Serial.println("There was a network problem. System will restart, please wait...");
+         RestartSystem();
+         delay(TIMEOUT); // Waits for system to restart
+       }
     Serial.println("Passed!");
-  }
+     }
 
   //GET response command.
   Serial.println("Actual command:");
   Serial.println("AT+HTTPACTION=0\r\n");
   if (0 != gprs.sendCmdAndWaitForResp("AT+HTTPACTION=0\r\n", "200", TIMEOUT)) //Expects 200
-  {
-    ERROR("ERROR:");
-    Serial.println("There was a network problem. System will restart, please wait...");
-    RestartSystem();
-    delay(TIMEOUT); // Waits for system to restart
-  }
+     {
+       ERROR("ERROR:");
+       Serial.println("There was a network problem. System will restart, please wait...");
+       RestartSystem();
+       delay(TIMEOUT); // Waits for system to restart
+     }
   Serial.println("Passed!");
 
   gprs.sendCmd("AT+HTTPREAD\r\n");
@@ -184,10 +227,10 @@ void GetWhiteList()
 void RestartSystem()
 {
   if (0 != gprs.sendCmdAndWaitForResp("AT+CPOWD=1\r\n", "NORMAL POWER DOWN", TIMEOUT))
-  {
-    ERROR("ERROR:CPOWD");
+     {
+       ERROR("ERROR:CPOWD");
     //return;
-  }
+     }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -203,46 +246,46 @@ boolean getSerialString()
   i = 0;
   ////while (Serial.available() > 0)
   while (i < len )
-  {
-    ////char incomingbyte = Serial.read();
-    Serial.println("On while loop...");
-    char incomingbyte = response[i];
-    Serial.print(incomingbyte);
-    if (storeString)
-    {
-      //Let's check our index here, and abort if we're outside our buffer size
-      //We use our define here so our buffer size can be easily modified
-      if (dataBufferIndex == DATABUFFERSIZE)
-      {
-        //Oops, our index is pointing to an array element outside our buffer.
-        dataBufferIndex = 0;
-        break;
-      }
-      if (incomingbyte == endChar)
-      {
-        dataBuffer[dataBufferIndex] = 0; //null terminate the C string
-        //Our data string is complete.  return true
-        Serial.println("Value of dataBuffer");
-        Serial.println(dataBuffer);
-        return true;
-      }
-      else
-      {
-        dataBuffer[dataBufferIndex++] = incomingbyte;
-        dataBuffer[dataBufferIndex] = 0; //null terminate the C string   //<Hello, 10.5, 21>
-      }
-    }
-    else
-    {
+        {
+          ////char incomingbyte = Serial.read();
+          Serial.println("On while loop...");
+          char incomingbyte = response[i];
+          Serial.print(incomingbyte);
+          if (storeString)
+             {
+               //Let's check our index here, and abort if we're outside our buffer size
+               //We use our define here so our buffer size can be easily modified
+              if (dataBufferIndex == DATABUFFERSIZE)
+                 {
+                   //Oops, our index is pointing to an array element outside our buffer.
+                   dataBufferIndex = 0;
+                   break;
+                 }
+              if (incomingbyte == endChar)
+                 {
+                    dataBuffer[dataBufferIndex] = 0; //null terminate the C string
+                    //Our data string is complete.  return true
+                    Serial.println("Value of dataBuffer");
+                    Serial.println(dataBuffer);
+                    return true;
+                 }
+              else
+                 {
+                   dataBuffer[dataBufferIndex++] = incomingbyte;
+                   dataBuffer[dataBufferIndex] = 0; //null terminate the C string   //<Hello, 10.5, 21>
+                 }
+             }
+             else
+                {
 
-    }
-    if (incomingbyte == startChar)
-    {
-      dataBufferIndex = 0;  //Initialize our dataBufferIndex variable
-      storeString = true;
-    }
-    i = i + 1;
-  }
+                }
+             if (incomingbyte == startChar)
+                {
+                  dataBufferIndex = 0;  //Initialize our dataBufferIndex variable
+                  storeString = true;
+                }
+             i = i + 1;
+        }
 
   //We've read in all the available Serial data, and don't have a valid string yet, so return false
   return false;
@@ -263,16 +306,16 @@ void parseSerialString()
   Serial.println(newNumber);
   static byte phoneNumberIndex = 0;
   while ((wordlist = strtok(NULL, ",")) != NULL)
-  {
-    phoneNumber[phoneNumberIndex++] = wordlist;
-    phoneNumber[phoneNumberIndex] = 0; //null terminate the C string
-  }
+        {
+          phoneNumber[phoneNumberIndex++] = wordlist;
+          phoneNumber[phoneNumberIndex] = 0; //null terminate the C string
+        }
 
   j = 0;
   for ( j = 0; j < newNumber; ++j)
-  {
-    Serial.println(phoneNumber[j]);
-  }
+      {
+        Serial.println(phoneNumber[j]);
+      }
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -280,22 +323,22 @@ void ClearWhiteList()
 {
   j = 1;         // lleva la cuenta de los nros a borrar
   while (j <= oldNumber)
-  {
-    Serial.println("Deleting Contacts.");
-    itoa(j, jj, 10);
-    Serial.println(jj);
-    // tmp = "AT+CPBW=" + jj + "\r\n"; numChars
-    char *tmp = join3Strings("AT+CPBW=", jj, "\r\n");
-    if (0 != gprs.sendCmdAndWaitForResp(tmp, "OK", TIMEOUT))
-    {
-      ERROR("ERROR:CPBW");
-      Serial.println("There was a network problem. System will restart, please wait...");
-      RestartSystem();
-      delay(TIMEOUT); // Waits for system to restart
-    }
-    Serial.println(tmp);       // comando AT a ejecutar ??
-    j   = j + 1;
-  }
+        {
+          Serial.println("Deleting Contacts.");
+          itoa(j, jj, 10);
+          Serial.println(jj);
+          // tmp = "AT+CPBW=" + jj + "\r\n"; numChars
+          char *tmp = join3Strings("AT+CPBW=", jj, "\r\n");
+          if (0 != gprs.sendCmdAndWaitForResp(tmp, "OK", TIMEOUT))
+             {
+               ERROR("ERROR:CPBW");
+               Serial.println("There was a network problem. System will restart, please wait...");
+               RestartSystem();
+               delay(TIMEOUT); // Waits for system to restart
+             }
+          Serial.println(tmp);       // comando AT a ejecutar ??
+          j   = j + 1;
+        }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -328,23 +371,22 @@ void LoadWhiteList()
   ClearWhiteList();
   j = 0;
   while (j < newNumber)
-  {
-    //Serial.println("On LoadWhiteList() loop");
-    itoa(j + 1, jj, 10);
-    Serial.println(jj);
-    char *tmp = join7Strings("AT+CPBW=", jj, ",\"", phoneNumber[j], "\",129,\"" , jj , "\"\r\n");
-    Serial.println(tmp);
+        {
+          //Serial.println("On LoadWhiteList() loop");
+          itoa(j + 1, jj, 10);
+          Serial.println(jj);
+          char *tmp = join7Strings("AT+CPBW=", jj, ",\"", phoneNumber[j], "\",129,\"" , jj , "\"\r\n");
+          Serial.println(tmp);
 
-    if (0 != gprs.sendCmdAndWaitForResp(tmp, "OK", TIMEOUT))
-    {
-      ERROR("ERROR:CPBW");
-      Serial.println("There was a network problem. System will restart, please wait...");
-      RestartSystem();
-      delay(TIMEOUT); // Waits for system to restart
-    }
-
-    j = j + 1;
-  }
+          if (0 != gprs.sendCmdAndWaitForResp(tmp, "OK", TIMEOUT))
+             {
+               ERROR("ERROR:CPBW");
+               Serial.println("There was a network problem. System will restart, please wait...");
+               RestartSystem();
+               delay(TIMEOUT); // Waits for system to restart
+             }
+            j = j + 1;
+        }
 }
 
 
